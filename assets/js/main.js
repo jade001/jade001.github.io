@@ -1,118 +1,208 @@
 /*
-	Twenty by HTML5 UP
-	html5up.net | @n33co
+	Paradigm Shift by HTML5 UP
+	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
 */
 
 (function($) {
 
-	skel.breakpoints({
-		wide: '(max-width: 1680px)',
-		normal: '(max-width: 1280px)',
-		narrow: '(max-width: 980px)',
-		narrower: '(max-width: 840px)',
-		mobile: '(max-width: 736px)'
-	});
+	var	$window = $(window),
+		$body = $('body');
 
-	$(function() {
+	// Breakpoints.
+		breakpoints({
+			default:   ['1681px',   null       ],
+			xlarge:    ['1281px',   '1680px'   ],
+			large:     ['981px',    '1280px'   ],
+			medium:    ['737px',    '980px'    ],
+			small:     ['481px',    '736px'    ],
+			xsmall:    ['361px',    '480px'    ],
+			xxsmall:   [null,       '360px'    ]
+		});
 
-		var	$window = $(window),
-			$body = $('body'),
-			$header = $('#header'),
-			$banner = $('#banner');
+	// Play initial animations on page load.
+		$window.on('load', function() {
+			window.setTimeout(function() {
+				$body.removeClass('is-preload');
+			}, 100);
+		});
 
-		// Disable animations/transitions until the page has loaded.
-			$body.addClass('is-loading');
+	// Hack: Enable IE workarounds.
+		if (browser.name == 'ie')
+			$body.addClass('is-ie');
 
-			$window.on('load', function() {
-				$body.removeClass('is-loading');
+	// Mobile?
+		if (browser.mobile)
+			$body.addClass('is-mobile');
+
+	// Scrolly.
+		$('.scrolly')
+			.scrolly({
+				offset: 100
 			});
 
-		// CSS polyfills (IE<9).
-			if (skel.vars.IEVersion < 9)
-				$(':last-child').addClass('last-child');
+	// Polyfill: Object fit.
+		if (!browser.canUse('object-fit')) {
 
-		// Fix: Placeholder polyfill.
-			$('form').placeholder();
+			$('.image[data-position]').each(function() {
 
-		// Prioritize "important" elements on narrower.
-			skel.on('+narrower -narrower', function() {
-				$.prioritize(
-					'.important\\28 narrower\\29',
-					skel.breakpoint('narrower').active
-				);
+				var $this = $(this),
+					$img = $this.children('img');
+
+				// Apply img as background.
+					$this
+						.css('background-image', 'url("' + $img.attr('src') + '")')
+						.css('background-position', $this.data('position'))
+						.css('background-size', 'cover')
+						.css('background-repeat', 'no-repeat');
+
+				// Hide img.
+					$img
+						.css('opacity', '0');
+
 			});
 
-		// Scrolly links.
-			$('.scrolly').scrolly({
-				speed: 1000,
-				offset: -10
+			$('.gallery > a').each(function() {
+
+				var $this = $(this),
+					$img = $this.children('img');
+
+				// Apply img as background.
+					$this
+						.css('background-image', 'url("' + $img.attr('src') + '")')
+						.css('background-position', 'center')
+						.css('background-size', 'cover')
+						.css('background-repeat', 'no-repeat');
+
+				// Hide img.
+					$img
+						.css('opacity', '0');
+
 			});
 
-		// Dropdowns.
-			$('#nav > ul').dropotron({
-				mode: 'fade',
-				noOpenerFade: true,
-				expandMode: (skel.vars.touch ? 'click' : 'hover')
-			});
+		}
 
-		// Off-Canvas Navigation.
+	// Gallery.
+		$('.gallery')
+			.on('click', 'a', function(event) {
 
-			// Navigation Button.
-				$(
-					'<div id="navButton">' +
-						'<a href="#navPanel" class="toggle"></a>' +
-					'</div>'
-				)
-					.appendTo($body);
+				var $a = $(this),
+					$gallery = $a.parents('.gallery'),
+					$modal = $gallery.children('.modal'),
+					$modalImg = $modal.find('img'),
+					href = $a.attr('href');
 
-			// Navigation Panel.
-				$(
-					'<div id="navPanel">' +
-						'<nav>' +
-							$('#nav').navList() +
-						'</nav>' +
-					'</div>'
-				)
-					.appendTo($body)
-					.panel({
-						delay: 500,
-						hideOnClick: true,
-						hideOnSwipe: true,
-						resetScroll: true,
-						resetForms: true,
-						side: 'left',
-						target: $body,
-						visibleClass: 'navPanel-visible'
+				// Not an image? Bail.
+					if (!href.match(/\.(jpg|gif|png|mp4)$/))
+						return;
+
+				// Prevent default.
+					event.preventDefault();
+					event.stopPropagation();
+
+				// Locked? Bail.
+					if ($modal[0]._locked)
+						return;
+
+				// Lock.
+					$modal[0]._locked = true;
+
+				// Set src.
+					$modalImg.attr('src', href);
+
+				// Set visible.
+					$modal.addClass('visible');
+
+				// Focus.
+					$modal.focus();
+
+				// Delay.
+					setTimeout(function() {
+
+						// Unlock.
+							$modal[0]._locked = false;
+
+					}, 600);
+
+			})
+			.on('click', '.modal', function(event) {
+
+				var $modal = $(this),
+					$modalImg = $modal.find('img');
+
+				// Locked? Bail.
+					if ($modal[0]._locked)
+						return;
+
+				// Already hidden? Bail.
+					if (!$modal.hasClass('visible'))
+						return;
+
+				// Stop propagation.
+					event.stopPropagation();
+
+				// Lock.
+					$modal[0]._locked = true;
+
+				// Clear visible, loaded.
+					$modal
+						.removeClass('loaded')
+
+				// Delay.
+					setTimeout(function() {
+
+						$modal
+							.removeClass('visible')
+
+						setTimeout(function() {
+
+							// Clear src.
+								$modalImg.attr('src', '');
+
+							// Unlock.
+								$modal[0]._locked = false;
+
+							// Focus.
+								$body.focus();
+
+						}, 475);
+
+					}, 125);
+
+			})
+			.on('keypress', '.modal', function(event) {
+
+				var $modal = $(this);
+
+				// Escape? Hide modal.
+					if (event.keyCode == 27)
+						$modal.trigger('click');
+
+			})
+			.on('mouseup mousedown mousemove', '.modal', function(event) {
+
+				// Stop propagation.
+					event.stopPropagation();
+
+			})
+			.prepend('<div class="modal" tabIndex="-1"><div class="inner"><img src="" /></div></div>')
+				.find('img')
+					.on('load', function(event) {
+
+						var $modalImg = $(this),
+							$modal = $modalImg.parents('.modal');
+
+						setTimeout(function() {
+
+							// No longer visible? Bail.
+								if (!$modal.hasClass('visible'))
+									return;
+
+							// Set loaded.
+								$modal.addClass('loaded');
+
+						}, 275);
+
 					});
-
-			// Fix: Remove navPanel transitions on WP<10 (poor/buggy performance).
-				if (skel.vars.os == 'wp' && skel.vars.osVersion < 10)
-					$('#navButton, #navPanel, #page-wrapper')
-						.css('transition', 'none');
-
-		// Header.
-		// If the header is using "alt" styling and #banner is present, use scrollwatch
-		// to revert it back to normal styling once the user scrolls past the banner.
-		// Note: This is disabled on mobile devices.
-			if (!skel.vars.mobile
-			&&	$header.hasClass('alt')
-			&&	$banner.length > 0) {
-
-				$window.on('load', function() {
-
-					$banner.scrollwatch({
-						delay:		0,
-						range:		1,
-						anchor:		'top',
-						on:			function() { $header.addClass('alt reveal'); },
-						off:		function() { $header.removeClass('alt'); }
-					});
-
-				});
-
-			}
-
-	});
 
 })(jQuery);
